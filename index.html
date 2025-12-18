@@ -537,13 +537,22 @@
             submitTime: new Date().toISOString(),
             platform: "Telegram Mini App"
           };
-          js
-fetch("https://script.google.com/macros/s/AKfycbz_owaSMuR2NnApEYocFqOxvlgFKSV05QEyJeHslp_QbJzXmL5_qx-Vq80VUwqtHkyTYA/exec", {
-  method: "POST",
-  body: JSON.stringify(payload),
-  headers: { "Content-Type": "application/json" }
-});
-
+          fetch("https://script.google.com/macros/s/AKfycbz_owaSMuR2NnApEYocFqOxvlgFKSV05QEyJeHslp_QbJzXmL5_qx-Vq80VUwqtHkyTYA/exec", {
+    method: "POST",
+    body: JSON.stringify(payload),
+    headers: { "Content-Type": "application/json" }
+  })
+  .then(response => {
+    if (!response.ok) {
+      console.error("Ошибка отправки:", response.status);
+    } else {
+      console.log("Данные успешно отправлены в Google Sheets");
+    }
+  })
+  .catch(error => {
+    console.error("Сетевая ошибка:", error);
+  });
+              
           submittedProducts.set(name, { entries, dom: productDiv });
 
           productDiv.classList.add('hiding');
@@ -651,5 +660,6 @@ fetch("https://script.google.com/macros/s/AKfycbz_owaSMuR2NnApEYocFqOxvlgFKSV05Q
   </script>
 </body>
 </html>
+
 
 
