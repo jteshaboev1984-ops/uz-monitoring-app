@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Ijtimoiy ahamiyatga mahsulotlar narxi monitoringi</title>
+  <!-- Mock Telegram.WebApp -->
+  <script>
+    window.Telegram = {
+      WebApp: {
+        ready: () => console.log("WebApp ready"),
+        expand: () => {},
+        disableVerticalSwipes: () => {},
+        initDataUnsafe: {
+          user: { id: 123456789, first_name: "Ali", last_name: "Valiyev", username: "ali_volunteer" },
+          chat: { id: -1001234567890 }
+        },
+        showPopup: (opts) => alert(opts.title + "\n\n" + opts.message),
+        showAlert: (msg) => alert(msg)
+      }
+    };
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    body {
+      background: #f9fbfd;
+      color: #222;
+      padding: 16px;
+      max-width: 600px;
+      margin: 0 auto;
+      padding-top: 100px;
+      padding-bottom: 100px;
+      position: relative;
+    }
+    .language-buttons {
+      text-align: center;
+      margin: 24px 0;
+    }
+    .language-buttons button {
+      margin: 0 8px;
+      padding: 8px 16px;
+      border: 1px solid #ccc;
+      border-radius: 20px;
+      background: white;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .language-buttons button.active {
+      background: #1a73e8;
+      color: white;
+    }
+    .top-bar {
+      position: fixed;
+      top: 12px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      z-index: 1000;
+    }
+    .dropdown {
+      padding: 6px 12px;
+      font-size: 13px;
+      border: 1px solid #ccc;
+      border-radius: 18px;
+      background: white;
+      cursor: pointer;
+      min-width: auto;
+      text-align: left;
+      white-space: nowrap;
+    }
+    #restoreSelect {
+      min-width: fit-content;
+      width: auto;
+    }
+    h1 {
+      font-size: 22px;
+      text-align: center;
+      margin: 0 0 30px;
+    }
+    .info-box {
+      background: #e8f0fe;
+      border-left: 4px solid #1a73e8;
+      padding: 16px;
+      border-radius: 8px;
+      margin: 0 0 24px;
+      font-size: 14px;
+      line-height: 1.5;
+      text-align: left;
+    }
+    .product {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      text-align: left;
+    }
+    .product.hiding {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    .product.hidden {
+      display: none;
+    }
+    .product h2 {
+      font-size: 16px;
+      margin-bottom: 12px;
+      color: #1a73e8;
+      text-align: left;
+    }
+    .price-entry {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .price-entry input {
+      width: 80px;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      text-align: center;
+    }
+    .quality-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .quality-group label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+    .submit-product-btn {
+      width: 100%;
+      padding: 10px;
+      background: #1a73e8;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      margin-top: 12px;
+      cursor: pointer;
+      font-weight: 500;
+      white-space: nowrap;
+      text-align: center;
+    }
+    .submit-product-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    #checkoutBtn, #checkinBtn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      margin: 20px 0;
+      font-size: 16px;
+      white-space: nowrap;
+    }
+    #checkinBtn { background: #34a853; color: white; }
+    #checkoutBtn { background: #fbbc05; color: #222; display: none; }
+
+    .message, #confirmDialog {
+      text-align: center;
+      padding: 24px;
+      background: white;
+      border-radius: 12px;
+      margin: 20px 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      display: none;
+      white-space: normal;
+    }
+    .confirm-btns {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .confirm-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .confirm-yes { background: #34a853; color: white; }
+    .confirm-no { background: #ea4335; color: white; }
+
+    .disclaimer {
+      font-size: 12px;
+      color: #888;
+      margin-top: 24px;
+      text-align: center;
+    }
+
+    #emergencyBtn {
+      position: fixed;
+      bottom: 16px;
+      left: 16px;
+      right: 16px;
+      padding: 16px;
+      background: #d93025;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(217, 48, 37, 0.4);
+      z-index: 1000;
+      white-space: nowrap;
+    }
+
+    #emergencyOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(217, 48, 37, 0.95);
+      color: white;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      z-index: 2000;
+      padding: 20px;
+      animation: pulse 1.2s infinite;
+    }
+    @keyframes pulse {
+      0% { opacity: 0.7; }
+      50% { opacity: 1; }
+      100% { opacity: 0.7; }
+    }
+    #emergencyOverlay h2 {
+      font-size: 24px;
+      margin-bottom: 16px;
+    }
+    #emergencyOverlay p {
+      font-size: 18px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <!-- Initial language buttons -->
+  <div class="language-buttons" id="langButtons">
+    <button data-lang="uz" class="active">O'zbekcha</button>
+    <button data-lang="ru">Русский</button>
+    <button data-lang="en">English</button>
+  </div>
+
+  <!-- Top bar after check-in -->
+  <div class="top-bar" id="topBar" style="display: none;">
+    <select id="restoreSelect" class="dropdown">
+      <option value="">🔄 Ma'lumot yuborilgan mahsulotlar</option>
+    </select>
+    <select id="langSelect" class="dropdown">
+      <option value="uz">O'zbekcha</option>
+      <option value="ru">Русский</option>
+      <option value="en">English</option>
+    </select>
+  </div>
+
+  <h1 id="title">Ijtimoiy ahamiyatga mahsulotlar narxi monitoringi</h1>
+
+  <div class="info-box" id="permissionsInfo">
+    <!-- filled dynamically -->
+  </div>
+
+  <button id="checkinBtn" class="checkin-btn">📍 Monitoringni boshlash</button>
+  <div id="products-container"></div>
+  <button id="checkoutBtn">✅ Monitoringni yakunlash</button>
+
+  <div id="message" class="message"></div>
+  <div id="confirmDialog" class="message"></div>
+  <p class="disclaimer" id="disclaimer">
+    Ma’lumotlar ta’lim loyihasi doirasida yig‘iladi va faqat axborot maqsadida ishlatiladi.<br>
+    Loyiha O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Tarmoq bozorlari va ishlab chiqarishda mehnat unumdorligi tadqiqotlari markazi tomonidan o'quvchi-volontyorlar yordamida amalga oshiriladi.
+  </p>
+
+  <button id="emergencyBtn">🚨 Favqulodda vaziyat</button>
+
+  <div id="emergencyOverlay">
+    <div>
+      <h2>🚨 Favqulodda vaziyat!</h2>
+      <p>Siz bilan tez orada regional koordinator bog‘lanadi.<br>
+         Zarurat bo‘lsa, Milliy gvardiya yoki Ichki ishlar vazirligi xodimlariga murojaat qiling.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const PRODUCTS_UZ = [
+      "Non (500g)", "Guruch (1kg)", "Kartoshka (1kg)", "Sariq piyoz (1kg)", "Go‘sht (1kg)",
+      "Sut (1L)", "Tuxum (10 dona)", "Shakar (1kg)", "O‘simlik moyi (1L)", "Un (1kg)",
+      "Makaron (1kg)", "Tuz (1kg)", "Qora choy (100g)", "Sabzi (1kg)", "Karam (1kg)",
+      "Olma (1kg)", "Banana (1kg)", "Baliq (1kg)", "Sharbat (1L)", "Piyoz (1kg)"
+    ];
+    const PRODUCTS_RU = [
+      "Хлеб (500г)", "Рис (1кг)", "Картофель (1кг)", "Лук репчатый (1кг)", "Мясо (1кг)",
+      "Молоко (1л)", "Яйца (10 шт)", "Сахар (1кг)", "Раст. масло (1л)", "Мука (1кг)",
+      "Макароны (1кг)", "Соль (1кг)", "Чай черный (100г)", "Морковь (1кг)", "Капуста (1кг)",
+      "Яблоки (1кг)", "Бананы (1кг)", "Рыба (1кг)", "Сок (1л)", "Лук (1кг)"
+    ];
+    const PRODUCTS_EN = [
+      "Bread (500g)", "Rice (1kg)", "Potato (1kg)", "Onion (1kg)", "Meat (1kg)",
+      "Milk (1L)", "Eggs (10 pcs)", "Sugar (1kg)", "Vegetable oil (1L)", "Flour (1kg)",
+      "Pasta (1kg)", "Salt (1kg)", "Black tea (100g)", "Carrot (1kg)", "Cabbage (1kg)",
+      "Apples (1kg)", "Bananas (1kg)", "Fish (1kg)", "Juice (1L)", "Onion (1kg)"
+    ];
+
+    const LANGUAGES = {
+      uz: {
+        title: "Ijtimoiy ahamiyatga mahsulotlar narxi monitoringi",
+        permissions: "Ma’lumotlarni iloji boricha aniq yig‘ish uchun iltimos, Telegram sozlamalarida joylashuv va vaqt ma’lumotlariga ruxsat bering.<br>Bu loyiha xavfsizligi va ishonchliligini ta’minlaydi.",
+        checkin: "📍 Monitoringni boshlash",
+        checkout: "✅ Monitoringni yakunlash",
+        submitProduct: "Ma’lumotni yuborish",
+        incompleteWarning: "Siz hali barcha mahsulotlar bo‘yicha ma’lumot kiritmadingiz.<br>Baribir monitoringni yakunlamoqchimisiz?",
+        yes: "Ha",
+        no: "Yo‘q",
+        pricePlaceholder: "Narx",
+        qualityA: "A toifasi",
+        qualityB: "B toifasi",
+        qualityC: "C toifasi",
+        thankyou: "Bugungi monitoring muvaffaqiyatli yakunlandi!<br><br>Sizning hissangiz loyiha muvaffaqiyatiga katta hissa qo‘shmoqda.<br>Keyingi monitoringda ham ishtirok etishni unutmang!",
+        emergencyAlert: "Siz bilan tez orada regional koordinator bog‘lanadi.<br>Zarurat bo‘lsa, Milliy gvardiya yoki Ichki ishlar vazirligi xodimlariga murojaat qiling.",
+        disclaimer: "Ma’lumotlar ta’lim loyihasi doirasida yig‘iladi va faqat axborot maqsadida ishlatiladi.<br>Loyiha O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Tarmoq bozorlari va ishlab chiqarishda mehnat unumdorligi tadqiqotlari markazi tomonidan o'quvchi-volontyorlar yordamida amalga oshiriladi.",
+        restoreLabel: "🔄 Ma'lumot yuborilgan mahsulotlar",
+        products: PRODUCTS_UZ
+      },
+      ru: {
+        title: "Мониторинг цен на социально значимые продукты",
+        permissions: "Для обеспечения максимальной точности данных, пожалуйста, разрешите доступ к геолокации и времени в настройках Telegram.<br>Это необходимо для безопасности и достоверности проекта.",
+        checkin: "📍 Начало мониторинга",
+        checkout: "✅ Завершение мониторинга",
+        submitProduct: "Отправить информацию",
+        incompleteWarning: "Вы ещё не ввели данные по всем товарам.<br>Завершить мониторинг в любом случае?",
+        yes: "Да",
+        no: "Нет",
+        pricePlaceholder: "Цена",
+        qualityA: "Категория A",
+        qualityB: "Категория B",
+        qualityC: "Категория C",
+        thankyou: "Сегодняшний мониторинг успешно завершён!<br><br>Ваш вклад играет важную роль в успехе проекта.<br>Не забудьте принять участие и на следующем мониторинге!",
+        emergencyAlert: "Скоро с вами свяжется региональный координатор.<br>В случае необходимости обращайтесь к сотрудникам Патрульной службы Национальной гвардии или МВД.",
+        disclaimer: "Данные носят сигнальный и образовательный характер.<br>Проект осуществляется Центром исследований отраслевых рынков и производительности труда в производстве при Министерстве экономики и финансов Республики Узбекистан с участием учеников-волонтёров.",
+        restoreLabel: "🔄 Продукты с отправленными данными",
+        products: PRODUCTS_RU
+      },
+      en: {
+        title: "Monitoring prices of socially significant products",
+        permissions: "To ensure data accuracy, please allow access to location and time in Telegram settings.<br>This is essential for project security and reliability.",
+        checkin: "📍 Start monitoring",
+        checkout: "✅ End monitoring",
+        submitProduct: "Submit data",
+        incompleteWarning: "You have not submitted data for all products yet.<br>Finish monitoring anyway?",
+        yes: "Yes",
+        no: "No",
+        pricePlaceholder: "Price",
+        qualityA: "Grade A",
+        qualityB: "Grade B",
+        qualityC: "Grade C",
+        thankyou: "Today’s monitoring has been successfully completed!<br><br>Your contribution is vital to the project’s success.<br>Don’t forget to participate again in the next monitoring session!",
+        emergencyAlert: "A regional coordinator will contact you shortly.<br>In case of emergency, contact the Patrol Service of the National Guard or Ministry of Internal Affairs.",
+        disclaimer: "Data collected for educational purposes only.<br>The project is implemented by the Center for Market and Productivity Research, Ministry of Economy and Finance of the Republic of Uzbekistan, with the help of student volunteers.",
+        restoreLabel: "🔄 Products with submitted data",
+        products: PRODUCTS_EN
+      }
+    };
+
+    let currentLang = 'uz';
+    let isCheckInDone = false;
+    let checkInData = null;
+    const today = new Date().toISOString().split('T')[0];
+    const submittedProducts = new Map();
+
+    const langButtons = document.querySelectorAll('#langButtons button');
+    const topBar = document.getElementById('topBar');
+    const langSelect = document.getElementById('langSelect');
+    const restoreSelect = document.getElementById('restoreSelect');
+    const titleEl = document.getElementById('title');
+    const checkinBtn = document.getElementById('checkinBtn');
+    const checkoutBtn = document.getElementById('checkoutBtn');
+    const container = document.getElementById('products-container');
+    const messageEl = document.getElementById('message');
+    const confirmDialog = document.getElementById('confirmDialog');
+    const disclaimerEl = document.getElementById('disclaimer');
+    const permissionsInfoEl = document.getElementById('permissionsInfo');
+    const emergencyBtn = document.getElementById('emergencyBtn');
+    const emergencyOverlay = document.getElementById('emergencyOverlay');
+
+    function preserveScroll(fn) {
+      const scrollY = window.scrollY;
+      fn();
+      window.scrollTo(0, scrollY);
+    }
+
+    langButtons.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        langButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentLang = btn.dataset.lang;
+        langSelect.value = currentLang;
+        preserveScroll(updateUI);
+      });
+    });
+
+    langSelect.addEventListener('change', (e) => {
+      e.preventDefault();
+      currentLang = langSelect.value;
+      langButtons.forEach(b => {
+        b.classList.toggle('active', b.dataset.lang === currentLang);
+      });
+      // ✅ Hide any open messages on language change
+      messageEl.style.display = 'none';
+      confirmDialog.style.display = 'none';
+      preserveScroll(updateUI);
+    });
+
+    function updateUI() {
+      const t = LANGUAGES[currentLang];
+      titleEl.textContent = t.title;
+      permissionsInfoEl.innerHTML = t.permissions;
+      checkinBtn.textContent = t.checkin;
+      checkoutBtn.textContent = t.checkout;
+      disclaimerEl.innerHTML = t.disclaimer;
+      emergencyBtn.textContent = "🚨 " + (currentLang === 'uz' ? "Favqulodda vaziyat" : currentLang === 'ru' ? "Чрезвычайная ситуация" : "Emergency");
+      
+      restoreSelect.innerHTML = `<option value="">${t.restoreLabel}</option>`;
+      updateRestoreDropdown();
+
+      if (isCheckInDone) {
+        renderForm();
+      }
+    }
+
+    checkinBtn.addEventListener('click', () => {
+      const userData = Telegram.WebApp.initDataUnsafe?.user;
+      checkInData = {
+        userId: userData?.id,
+        firstName: userData?.first_name,
+        lastName: userData?.last_name,
+        username: userData?.username,
+        checkInTime: new Date().toISOString(),
+        date: today
+      };
+
+      document.getElementById('langButtons').style.display = 'none';
+      topBar.style.display = 'flex';
+      checkinBtn.style.display = 'none';
+      permissionsInfoEl.style.display = 'none';
+      checkoutBtn.style.display = 'block';
+      isCheckInDone = true;
+      renderForm();
+    });
+
+    function renderForm() {
+      container.innerHTML = '';
+      const products = LANGUAGES[currentLang].products;
+      products.forEach((name, idx) => {
+        const productDiv = document.createElement('div');
+        productDiv.className = 'product';
+        productDiv.dataset.product = name;
+
+        let entriesHTML = '';
+        const saved = submittedProducts.get(name);
+        for (let i = 0; i < 5; i++) {
+          const savedEntry = saved?.entries?.[i] || {};
+          entriesHTML += `
+            <div class="price-entry">
+              <input type="number" step="0.01" min="0" placeholder="${LANGUAGES[currentLang].pricePlaceholder}"
+                data-product="${name}" data-index="${i}" value="${savedEntry.price || ''}">
+              <div class="quality-group">
+                <label><input type="radio" name="q-${name}-${i}" value="A" ${savedEntry.quality === 'A' ? 'checked' : ''}> ${LANGUAGES[currentLang].qualityA}</label>
+                <label><input type="radio" name="q-${name}-${i}" value="B" ${savedEntry.quality === 'B' ? 'checked' : ''}> ${LANGUAGES[currentLang].qualityB}</label>
+                <label><input type="radio" name="q-${name}-${i}" value="C" ${savedEntry.quality === 'C' ? 'checked' : ''}> ${LANGUAGES[currentLang].qualityC}</label>
+              </div>
+            </div>
+          `;
+        }
+
+        productDiv.innerHTML = `
+          <h2>${name}</h2>
+          ${entriesHTML}
+          <button class="submit-product-btn" data-product="${name}">
+            ${LANGUAGES[currentLang].submitProduct}
+          </button>
+        `;
+        container.appendChild(productDiv);
+
+        if (saved) productDiv.classList.add('hidden');
+
+        const inputs = productDiv.querySelectorAll('input[type="number"]');
+        const radios = productDiv.querySelectorAll('input[type="radio"]');
+        const submitBtn = productDiv.querySelector('.submit-product-btn');
+
+        function validateProduct() {
+          let valid = false;
+          for (let i = 0; i < 5; i++) {
+            const price = parseFloat(productDiv.querySelector(`input[data-index="${i}"]`).value) || null;
+            const radio = productDiv.querySelector(`input[name="q-${name}-${i}"]:checked`);
+            if (price !== null && radio) valid = true;
+          }
+          submitBtn.disabled = !valid;
+        }
+
+        inputs.forEach(inp => inp.addEventListener('input', validateProduct));
+        radios.forEach(r => r.addEventListener('change', validateProduct));
+
+        submitBtn.addEventListener('click', () => {
+          const entries = [];
+          for (let i = 0; i < 5; i++) {
+            const price = parseFloat(productDiv.querySelector(`input[data-index="${i}"]`).value) || null;
+            const radio = productDiv.querySelector(`input[name="q-${name}-${i}"]:checked`);
+            if (price !== null && radio) {
+              entries.push({ price, quality: radio.value });
+            }
+          }
+          if (entries.length === 0) return;
+
+          const payload = {
+            ...checkInData,
+            product: name,
+            entries,
+            submitTime: new Date().toISOString(),
+            platform: "Telegram Mini App"
+          };
+          console.log("📤 DATA TO GOOGLE SHEETS:", payload);
+
+          submittedProducts.set(name, { entries, dom: productDiv });
+
+          productDiv.classList.add('hiding');
+          setTimeout(() => {
+            productDiv.classList.add('hidden');
+            updateRestoreDropdown();
+          }, 400);
+        });
+      });
+    }
+
+    function updateRestoreDropdown() {
+      const t = LANGUAGES[currentLang];
+      restoreSelect.innerHTML = `<option value="">${t.restoreLabel}</option>`;
+      submittedProducts.forEach((_, name) => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        restoreSelect.appendChild(opt);
+      });
+      restoreSelect.onchange = (e) => {
+        const name = e.target.value;
+        if (name) {
+          const rec = submittedProducts.get(name);
+          if (rec && rec.dom) {
+            rec.dom.classList.remove('hidden', 'hiding');
+            submittedProducts.delete(name);
+          }
+          e.target.value = "";
+          updateRestoreDropdown();
+        }
+      };
+    }
+
+    checkoutBtn.addEventListener('click', () => {
+      if (submittedProducts.size < LANGUAGES[currentLang].products.length) {
+        const t = LANGUAGES[currentLang];
+        confirmDialog.innerHTML = `
+          <p>${t.incompleteWarning}</p>
+          <div class="confirm-btns">
+            <button class="confirm-btn confirm-yes">${t.yes}</button>
+            <button class="confirm-btn confirm-no">${t.no}</button>
+          </div>
+        `;
+        confirmDialog.style.display = 'block';
+
+        confirmDialog.querySelector('.confirm-yes').onclick = () => {
+          const alertPayload = {
+            type: "INCOMPLETE_CHECKOUT",
+            userId: checkInData.userId,
+            timestamp: new Date().toISOString(),
+            submitted: submittedProducts.size,
+            total: LANGUAGES[currentLang].products.length
+          };
+          console.warn("⚠️ COORDINATOR ALERT:", alertPayload);
+          confirmDialog.style.display = 'none';
+          finalizeCheckout();
+        };
+        confirmDialog.querySelector('.confirm-no').onclick = () => {
+          confirmDialog.style.display = 'none';
+        };
+      } else {
+        finalizeCheckout();
+      }
+    });
+
+    function finalizeCheckout() {
+      const t = LANGUAGES[currentLang];
+      messageEl.innerHTML = t.thankyou;
+      messageEl.style.display = 'block';
+      setTimeout(() => resetApp(), 20000);
+    }
+
+    function resetApp() {
+      isCheckInDone = false;
+      checkInData = null;
+      submittedProducts.clear();
+
+      document.getElementById('langButtons').style.display = 'block';
+      topBar.style.display = 'none';
+      checkinBtn.style.display = 'block';
+      permissionsInfoEl.style.display = 'block';
+      checkoutBtn.style.display = 'none';
+      messageEl.style.display = 'none';
+      confirmDialog.style.display = 'none';
+
+      container.innerHTML = '';
+    }
+
+    emergencyBtn.addEventListener('click', () => {
+      const emergencyPayload = {
+        type: "EMERGENCY_ALERT",
+        userId: Telegram.WebApp.initDataUnsafe?.user?.id,
+        timestamp: new Date().toISOString()
+      };
+      console.warn("🚨 EMERGENCY:", emergencyPayload);
+      emergencyOverlay.style.display = 'flex';
+      setTimeout(() => {
+        emergencyOverlay.style.display = 'none';
+        resetApp();
+      }, 10000);
+    });
+
+    updateUI();
+  </script>
+</body>
+</html>
+
